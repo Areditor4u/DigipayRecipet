@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="hi" class="h-full bg-slate-100">
 <head>
@@ -233,7 +232,7 @@
 
         <div id="tab-content-profile" class="tab-pane space-y-4">
           <!-- Profile Lock Toggle Banner -->
-          <div class="p-3 rounded-lg border flex items-center justify-between transition-colors" id="profile-lock-banner" class="bg-emerald-50 border-emerald-200">
+          <div class="p-3 rounded-lg border flex items-center justify-between transition-colors" id="profile-lock-banner">
             <div class="flex items-center gap-2">
               <i id="lock-status-icon" data-lucide="unlock" class="w-4 h-4 text-blue-600"></i>
               <div>
@@ -365,25 +364,71 @@
             <input type="text" id="input-datetime" value="19-09-2026 12:04:09 PM" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono" oninput="updateAppState()">
           </div>
 
-          <!-- Reference & Terminal Codes -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">RRN / Txn Ref ID</label>
-              <div class="flex gap-1">
-                <input type="text" id="input-rrn" value="425109876543" class="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
-                <button type="button" onclick="generateRandomRRN()" title="नया RRN बनाएं" class="px-2 bg-slate-200 hover:bg-slate-300 rounded text-xs font-bold">↻</button>
-              </div>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Auth / Stan Code</label>
-              <input type="text" id="input-auth-code" value="982310" class="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+          <!-- Reference Code (Auth & Terminal removed) -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">RRN / Txn Ref ID</label>
+            <div class="flex gap-1">
+              <input type="text" id="input-rrn" value="425109876543" class="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+              <button type="button" onclick="generateRandomRRN()" title="नया RRN बनाएं" class="px-2.5 bg-slate-200 hover:bg-slate-300 rounded text-xs font-bold">↻</button>
             </div>
           </div>
 
+          <!-- Bank Name Dropdown & Aadhaar -->
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">बैंक का नाम (Customer Bank)</label>
-              <input type="text" id="input-bank-name" value="State Bank of India (SBI)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+              <select id="input-bank-name" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-medium" onchange="updateAppState()">
+                <option value="State Bank of India (SBI)" selected>State Bank of India (SBI)</option>
+                <option value="Punjab National Bank (PNB)">Punjab National Bank (PNB)</option>
+                <option value="Bank of Baroda (BOB)">Bank of Baroda (BOB)</option>
+                <option value="Canara Bank">Canara Bank</option>
+                <option value="Union Bank of India">Union Bank of India</option>
+                <option value="Bank of India (BOI)">Bank of India (BOI)</option>
+                <option value="HDFC Bank">HDFC Bank</option>
+                <option value="ICICI Bank">ICICI Bank</option>
+                <option value="Axis Bank">Axis Bank</option>
+                <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                <option value="IndusInd Bank">IndusInd Bank</option>
+                <option value="IDBI Bank">IDBI Bank</option>
+                <option value="Indian Bank">Indian Bank</option>
+                <option value="Central Bank of India">Central Bank of India</option>
+                <option value="UCO Bank">UCO Bank</option>
+                <option value="Bank of Maharashtra">Bank of Maharashtra</option>
+                <option value="Indian Overseas Bank (IOB)">Indian Overseas Bank (IOB)</option>
+                <option value="Punjab & Sind Bank">Punjab & Sind Bank</option>
+                <option value="Federal Bank">Federal Bank</option>
+                <option value="RBL Bank">RBL Bank</option>
+                <option value="South Indian Bank">South Indian Bank</option>
+                <option value="Bandhan Bank">Bandhan Bank</option>
+                <option value="IDFC First Bank">IDFC First Bank</option>
+                <option value="Yes Bank">Yes Bank</option>
+                <option value="Karnataka Bank">Karnataka Bank</option>
+                <option value="Karur Vysya Bank (KVB)">Karur Vysya Bank (KVB)</option>
+                <option value="City Union Bank">City Union Bank</option>
+                <option value="Nainital Bank">Nainital Bank</option>
+                <option value="DBS Bank India">DBS Bank India</option>
+                <option value="Standard Chartered Bank">Standard Chartered Bank</option>
+                <option value="Citibank India">Citibank India</option>
+                <option value="HSBC India">HSBC India</option>
+                <option value="India Post Payments Bank (IPPB)">India Post Payments Bank (IPPB)</option>
+                <option value="Airtel Payments Bank">Airtel Payments Bank</option>
+                <option value="Fino Payments Bank">Fino Payments Bank</option>
+                <option value="Paytm Payments Bank">Paytm Payments Bank</option>
+                <option value="Jio Payments Bank">Jio Payments Bank</option>
+                <option value="Aryavart Bank">Aryavart Bank (Gramin)</option>
+                <option value="Baroda Rajasthan Kshetriya Grameen Bank">Baroda Rajasthan Gramin Bank</option>
+                <option value="Prathama UP Gramin Bank">Prathama UP Gramin Bank</option>
+                <option value="Karnataka Gramin Bank">Karnataka Gramin Bank</option>
+                <option value="Maharashtra Gramin Bank">Maharashtra Gramin Bank</option>
+                <option value="Kerala Gramin Bank">Kerala Gramin Bank</option>
+                <option value="Bihar Gramin Bank (DGB)">Dakshin Bihar Gramin Bank</option>
+                <option value="Jharkhand Rajya Gramin Bank">Jharkhand Rajya Gramin Bank</option>
+                <option value="Odisha Gramya Bank">Odisha Gramya Bank</option>
+                <option value="Tamil Nadu Grama Bank">Tamil Nadu Grama Bank</option>
+                <option value="Andhra Pragathi Grameena Bank">Andhra Pragathi Grameena Bank</option>
+                <option value="Telangana State Cooperative Apex Bank">Telangana Cooperative Bank</option>
+                <option value="Other Bank / अन्य बैंक">Other Bank / अन्य बैंक</option>
+              </select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">मास्क्ड आधार नं. (Aadhaar No)</label>
@@ -391,15 +436,9 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">ग्राहक का नाम (Customer Name)</label>
-              <input type="text" id="input-customer-name" value="सुरेश कुमार" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">डिवाइस / टर्मिनल ID</label>
-              <input type="text" id="input-terminal-id" value="MNT9812401" class="w-full px-3 py-2 text-sm font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
-            </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ग्राहक का नाम (Customer Name)</label>
+            <input type="text" id="input-customer-name" value="सुरेश कुमार" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
           </div>
 
           <div>
@@ -631,7 +670,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'csc_digipay_master_v3';
+    const STORAGE_KEY = 'csc_digipay_master_v4';
 
     // Application state
     const state = {
@@ -654,11 +693,9 @@
       ledgerBalance: "5420.75",
       dateTime: "19-09-2026 12:04:09 PM",
       rrn: "425109876543",
-      authCode: "982310",
       bankName: "State Bank of India (SBI)",
       aadhaarNo: "XXXX-XXXX-4589",
       customerName: "सुरेश कुमार",
-      terminalId: "MNT9812401",
       footerNote: "यह कंप्यूटर जनरेटेड रसीद है। किसी हस्ताक्षर की आवश्यकता नहीं है।",
 
       // Seals and Signatures
@@ -842,7 +879,7 @@
             <div class="flex items-center justify-between gap-1.5 border-b pb-1.5" style="border-color: ${state.themeColor}30;">
               <div class="flex items-center gap-1.5">
                 ${state.showLogo && state.logoUrl ? `
-                  <img src="${state.logoUrl}" alt="Logo" style="height: ${state.logoSize}px; width: ${state.logoSize}px; object-fit: contain;" class="rounded shrink-0">
+                  <img src="${state.logoUrl}" alt="Logo" style="height: ${state.logoSize}px; width:${state.logoSize}px; object-fit: contain;" class="rounded shrink-0">
                 ` : ''}
                 <div>
                   ${state.showShopName ? `
@@ -866,8 +903,7 @@
             <!-- Shop Address & Mobile -->
             ${state.showShopAddress ? `
               <div class="text-[8.5px] text-slate-600 mt-1 pb-1 border-b border-slate-100 flex justify-between gap-1">
-                <span class="truncate">${escapeHtml(state.shopAddress)}</span>
-                ${state.vleMobile ? `<span class="font-semibold text-slate-700 shrink-0">Mob: ${escapeHtml(state.vleMobile)}</span>` : ''}
+                <span class="truncate">${escapeHtml(state.shopAddress)}</span>${state.vleMobile ? `<span class="font-semibold text-slate-700 shrink-0">Mob: ${escapeHtml(state.vleMobile)}</span>` : ''}
               </div>
             ` : ''}
 
@@ -881,7 +917,7 @@
 
             <!-- Amount Highlight Box -->
             ${state.showAmountBox ? `
-              <div class="my-1 p-1 rounded text-center border" style="background-color: ${state.themeColor}08; border-color: ${state.themeColor}25;">
+              <div class="my-1 p-1 rounded text-center border" style="background-color: ${state.themeColor}08; border-color:${state.themeColor}25;">
                 <div class="text-[8.5px] font-bold uppercase tracking-wider text-slate-600">निकासी राशि (Withdrawal Amount)</div>
                 <div class="font-black text-base tracking-tight" style="color: ${state.themeColor};">
                   ₹ ${formattedAmount}
@@ -895,7 +931,7 @@
                 ${state.showVleId ? `
                   <tr class="border-b border-slate-100">
                     <td class="py-0.5 text-slate-500">VLE ID:</td>
-                    <td class="py-0.5 font-semibold text-right text-slate-800 font-mono">${escapeHtml(state.cscId)} ${state.vleName ? `(${escapeHtml(state.vleName)})` : ''}</td>
+                    <td class="py-0.5 font-semibold text-right text-slate-800 font-mono">${escapeHtml(state.cscId)}${state.vleName ? `(${escapeHtml(state.vleName)})` : ''}</td>
                   </tr>
                 ` : ''}
 
@@ -1010,11 +1046,9 @@
       state.ledgerBalance = document.getElementById('input-ledger-balance').value;
       state.dateTime = document.getElementById('input-datetime').value;
       state.rrn = document.getElementById('input-rrn').value;
-      state.authCode = document.getElementById('input-auth-code').value;
       state.bankName = document.getElementById('input-bank-name').value;
       state.aadhaarNo = document.getElementById('input-aadhaar-no').value;
       state.customerName = document.getElementById('input-customer-name').value;
-      state.terminalId = document.getElementById('input-terminal-id').value;
       state.footerNote = document.getElementById('input-footer-note').value;
 
       // Seals and Signs
@@ -1310,4 +1344,3 @@
   </script>
 </body>
 </html>
-```
