@@ -1,0 +1,1313 @@
+```html
+<!DOCTYPE html>
+<html lang="hi" class="h-full bg-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSC DigiPay Professional Receipt Generator | सीएससी डिजीपे रसीद निर्माता</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Inter & Noto Sans Devanagari -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans Devanagari', 'sans-serif'],
+          },
+          colors: {
+            cscblue: '#0B4F8A',
+            cscorange: '#F26522',
+            cscgreen: '#107c41',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* ========================================================
+       PERFECT FIXED A4 PRINT SPECIFICATIONS (ZERO SPILLOVER)
+       ======================================================== */
+    @page {
+      size: 210mm 297mm;
+      margin: 4mm 4mm;
+    }
+
+    @media print {
+      html, body {
+        width: 210mm !important;
+        height: 297mm !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      /* Hide entire web UI navigation & sidebars */
+      .no-print, #top-navbar, #control-sidebar, .preview-toolbar, #auth-modal, .toast-notification {
+        display: none !important;
+      }
+
+      #print-area-wrapper {
+        display: block !important;
+        width: 202mm !important;
+        height: 289mm !important;
+        max-height: 289mm !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        overflow: hidden !important;
+      }
+
+      #a4-sheet-canvas {
+        width: 202mm !important;
+        height: 289mm !important;
+        max-height: 289mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        transform: none !important;
+        overflow: hidden !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      #receipt-render-grid {
+        display: grid !important;
+        width: 202mm !important;
+        height: 289mm !important;
+        max-height: 289mm !important;
+        grid-template-columns: 99mm 99mm !important;
+        grid-template-rows: 93mm 93mm 93mm !important;
+        gap: 3mm 4mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+      }
+
+      .receipt-item-card {
+        height: 93mm !important;
+        max-height: 93mm !important;
+        box-sizing: border-box !important;
+        page-break-inside: avoid !important;
+        overflow: hidden !important;
+        padding: 6px 8px !important;
+      }
+
+      /* Individual slot hiding strictly preserves layout position */
+      .receipt-item-card.slot-hidden {
+        visibility: hidden !important;
+        opacity: 0 !important;
+      }
+
+      .cut-line-indicator {
+        display: block !important;
+      }
+    }
+
+    body.thermal-mode @page {
+      size: 80mm auto;
+      margin: 3mm;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col bg-slate-100 text-slate-800 antialiased select-none">
+
+  <div id="auth-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm p-6 text-center">
+      <div class="w-14 h-14 mx-auto rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-3 shadow-inner">
+        <i data-lucide="lock" class="w-7 h-7"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900">CSC DigiPay सुरक्षित लॉगिन</h3>
+      <p class="text-xs text-slate-500 mt-1">डेटा व हिस्ट्री सुरक्षित रखने हेतु अपना 4-अंकों का पिन दर्ज करें</p>
+      
+      <div class="my-5">
+        <input type="password" id="input-login-pin" maxlength="4" placeholder="••••" class="w-full text-center tracking-[12px] text-2xl font-mono py-2.5 px-4 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all">
+      </div>
+
+      <button type="button" onclick="handleLoginSubmit()" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold text-sm rounded-xl shadow-md transition-all">
+        लॉगिन करें (Unlock System)
+      </button>
+      <div class="mt-4 flex items-center justify-between text-[11px] text-slate-400">
+        <span>डिफ़ॉल्ट पिन: <strong class="text-slate-600 font-mono">1234</strong></span>
+        <span>सुरक्षित लोकल स्टोरेज</span>
+      </div>
+    </div>
+  </div>
+
+  <header id="top-navbar" class="no-print bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-blue-700 to-indigo-600 flex items-center justify-center text-white shadow-md">
+          <i data-lucide="receipt-text" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
+            CSC DigiPay Receipt Master 
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800">Pro Edition</span>
+          </h1>
+          <p class="text-xs text-slate-500">सीएससी डिजीपे विड्रॉल रसीद (सील, साइन, हिस्ट्री व 6-A4 फिक्स प्रिंट)</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button onclick="saveCurrentReceiptToHistory()" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-all border border-emerald-200">
+          <i data-lucide="save" class="w-3.5 h-3.5 text-emerald-600"></i>
+          हिस्ट्री में सेव करें
+        </button>
+
+        <button onclick="triggerPrint('thermal')" type="button" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-800 bg-amber-400 hover:bg-amber-500 rounded-lg transition-all shadow-sm">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+          थर्मल प्रिंट
+        </button>
+
+        <button onclick="triggerPrint('a4')" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all shadow-md active:scale-95">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          A4 प्रिंट करें (6 Copies)
+        </button>
+
+        <button onclick="handleLogout()" title="लॉगआउट / लॉक करें" type="button" class="p-2 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition-all border border-slate-200">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 flex flex-col lg:flex-row gap-6">
+
+    <!-- LEFT PANEL: Fully Editable Control Sidebar -->
+    <section id="control-sidebar" class="no-print w-full lg:w-[470px] bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col max-h-[calc(100vh-5.5rem)] overflow-hidden">
+      <!-- Tabs Navigation -->
+      <div class="flex border-b border-slate-200 bg-slate-50 px-2 pt-2 gap-1 overflow-x-auto text-xs font-semibold">
+        <button onclick="switchTab('profile')" id="tab-btn-profile" class="tab-btn active px-3 py-2 rounded-t-lg bg-white text-blue-700 border-t-2 border-blue-600 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+          <i data-lucide="store" class="w-3.5 h-3.5"></i> VLE दुकान
+        </button>
+        <button onclick="switchTab('transaction')" id="tab-btn-transaction" class="tab-btn px-3 py-2 rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap">
+          <i data-lucide="banknote" class="w-3.5 h-3.5"></i> लेन-देन
+        </button>
+        <button onclick="switchTab('visibility')" id="tab-btn-visibility" class="tab-btn px-3 py-2 rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap">
+          <i data-lucide="eye" class="w-3.5 h-3.5"></i> सील व फ़ील्ड्स
+        </button>
+        <button onclick="switchTab('layout')" id="tab-btn-layout" class="tab-btn px-3 py-2 rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap">
+          <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> रसीद हाइड/प्रिंट
+        </button>
+        <button onclick="switchTab('history')" id="tab-btn-history" class="tab-btn px-3 py-2 rounded-t-lg text-slate-600 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap">
+          <i data-lucide="history" class="w-3.5 h-3.5"></i> 1-माह हिस्ट्री
+        </button>
+      </div>
+
+      <!-- Tab Content Panels Container -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-4 text-sm select-text">
+
+        <div id="tab-content-profile" class="tab-pane space-y-4">
+          <!-- Profile Lock Toggle Banner -->
+          <div class="p-3 rounded-lg border flex items-center justify-between transition-colors" id="profile-lock-banner" class="bg-emerald-50 border-emerald-200">
+            <div class="flex items-center gap-2">
+              <i id="lock-status-icon" data-lucide="unlock" class="w-4 h-4 text-blue-600"></i>
+              <div>
+                <p id="lock-status-title" class="text-xs font-bold text-slate-800">दुकान प्रोफाइल खुली है (Editable)</p>
+                <p class="text-[11px] text-slate-500">गलती से बदलाव रोकने हेतु सेटिंग्स लॉक करें</p>
+              </div>
+            </div>
+            <button type="button" onclick="toggleProfileLock()" id="btn-toggle-profile-lock" class="px-3 py-1.5 text-xs font-bold rounded-lg border shadow-sm transition-all bg-white border-slate-300 text-slate-700 hover:bg-slate-100 flex items-center gap-1">
+              <i data-lucide="lock" class="w-3.5 h-3.5"></i> प्रोफाइल लॉक करें
+            </button>
+          </div>
+
+          <!-- Logo Upload & Display Option -->
+          <div class="space-y-2 border-b border-slate-100 pb-3">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">लोगो / फोटो सेटिंग</label>
+            <div class="flex items-center gap-4">
+              <div id="logo-preview-box" class="w-16 h-16 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden bg-slate-50 relative group">
+                <img id="custom-logo-img" src="https://placehold.co/100x100/0b4f8a/ffffff?text=CSC" alt="Logo" class="w-full h-full object-contain p-1">
+              </div>
+              <div class="flex-1 space-y-1.5">
+                <input type="file" id="logo-file-input" accept="image/*" class="profile-input block w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="setDefaultCSCLogo()" class="text-xs text-blue-600 hover:underline">डिजीपे डिफॉल्ट लोगो</button>
+                  <span class="text-slate-300">|</span>
+                  <button type="button" onclick="removeLogo()" class="text-xs text-rose-500 hover:underline">लोगो हटाएं</button>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between pt-1">
+              <label class="text-xs text-slate-600">लोगो साइज़:</label>
+              <input type="range" id="input-logo-size" min="30" max="75" value="44" class="profile-input w-32 accent-blue-600" oninput="updateAppState()">
+            </div>
+          </div>
+
+          <!-- Shop & VLE Fields -->
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">दुकान / केंद्र का नाम (Center Name)</label>
+              <input type="text" id="input-shop-name" value="डिजिटल सेवा केंद्र (CSC Center)" class="profile-input w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">CSC ID / VLE ID</label>
+                <input type="text" id="input-csc-id" value="123456789012" class="profile-input w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono" oninput="updateAppState()">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">संचालक का नाम (VLE Name)</label>
+                <input type="text" id="input-vle-name" value="राजेश शर्मा" class="profile-input w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">हेल्पलाइन / मोबाइल नं.</label>
+                <input type="text" id="input-vle-mobile" value="+91 98765 43210" class="profile-input w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">सब-हेडिंग / टैगलाइन</label>
+                <input type="text" id="input-tagline" value="AePS & Micro-ATM Services" class="profile-input w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">केंद्र का पूरा पता (Address)</label>
+              <textarea id="input-shop-address" rows="2" class="profile-input w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">मेन मार्केट, ग्राम पंचायत भवन के पास, नई दिल्ली - 110001</textarea>
+            </div>
+
+            <!-- PIN Modification section -->
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <label class="block text-xs font-bold text-slate-700 mb-1">सुरक्षा पिन बदलें (Change 4-Digit PIN)</label>
+              <div class="flex gap-2">
+                <input type="password" id="input-new-pin" maxlength="4" placeholder="नया 4 अंकों का पिन" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none font-mono">
+                <button type="button" onclick="updateSecurityPin()" class="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-lg">पिन सेव करें</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-content-transaction" class="tab-pane hidden space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">सेवा प्रकार (Service Type)</label>
+              <select id="input-service-type" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-medium" onchange="updateAppState()">
+                <option value="AePS नकद निकासी (Cash Withdrawal)" selected>AePS Cash Withdrawal (निकासी)</option>
+                <option value="AePS बैलेंस इन्क्वायरी (Balance Enquiry)">AePS Balance Enquiry (बैलेंस चेक)</option>
+                <option value="AePS मिनी स्टेटमेंट (Mini Statement)">AePS Mini Statement (मिनी स्टेटमेंट)</option>
+                <option value="AePS कैश डिपॉजिट (Cash Deposit)">AePS Cash Deposit (जमा)</option>
+                <option value="Micro-ATM Cash Withdrawal">Micro-ATM Cash Withdrawal</option>
+                <option value="Aadhaar Pay (आधार पे)">Aadhaar Pay (आधार पे)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">लेन-देन स्थिति (Status)</label>
+              <select id="input-txn-status" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-medium" onchange="updateAppState()">
+                <option value="SUCCESS" selected>सफल (SUCCESSFUL)</option>
+                <option value="FAILED">असफल (FAILED)</option>
+                <option value="PENDING">प्रक्रियाधीन (PENDING)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Amounts Grid -->
+          <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+            <div>
+              <label class="block text-xs font-bold text-slate-800 mb-1">निकासी राशि (Amount ₹)</label>
+              <div class="relative">
+                <span class="absolute left-3 top-2 text-slate-500 font-bold">₹</span>
+                <input type="number" id="input-amount" value="2500" class="w-full pl-7 pr-3 py-1.5 text-base font-bold text-blue-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">शेष राशि (Bal ₹)</label>
+              <div class="relative">
+                <span class="absolute left-3 top-2 text-slate-500 font-bold">₹</span>
+                <input type="number" id="input-ledger-balance" value="5420.75" class="w-full pl-7 pr-3 py-1.5 text-sm font-semibold text-slate-800 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Date Time Picker with Now button -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-semibold text-slate-700">तारीख और समय (Date & Time)</label>
+              <button type="button" onclick="setCurrentDateTime()" class="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1">
+                <i data-lucide="clock" class="w-3 h-3"></i> वर्तमान समय भरें
+              </button>
+            </div>
+            <input type="text" id="input-datetime" value="19-09-2026 12:04:09 PM" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono" oninput="updateAppState()">
+          </div>
+
+          <!-- Reference & Terminal Codes -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">RRN / Txn Ref ID</label>
+              <div class="flex gap-1">
+                <input type="text" id="input-rrn" value="425109876543" class="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+                <button type="button" onclick="generateRandomRRN()" title="नया RRN बनाएं" class="px-2 bg-slate-200 hover:bg-slate-300 rounded text-xs font-bold">↻</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Auth / Stan Code</label>
+              <input type="text" id="input-auth-code" value="982310" class="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">बैंक का नाम (Customer Bank)</label>
+              <input type="text" id="input-bank-name" value="State Bank of India (SBI)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">मास्क्ड आधार नं. (Aadhaar No)</label>
+              <input type="text" id="input-aadhaar-no" value="XXXX-XXXX-4589" class="w-full px-3 py-2 text-sm font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">ग्राहक का नाम (Customer Name)</label>
+              <input type="text" id="input-customer-name" value="सुरेश कुमार" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">डिवाइस / टर्मिनल ID</label>
+              <input type="text" id="input-terminal-id" value="MNT9812401" class="w-full px-3 py-2 text-sm font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">फुटर नोट / निर्देश (Custom Notice)</label>
+            <input type="text" id="input-footer-note" value="यह कंप्यूटर जनरेटेड रसीद है। किसी हस्ताक्षर की आवश्यकता नहीं है।" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updateAppState()">
+          </div>
+        </div>
+
+        <div id="tab-content-visibility" class="tab-pane hidden space-y-3">
+          <div class="p-3 bg-blue-50 rounded-lg border border-blue-200 text-xs text-blue-900 leading-tight">
+            <strong>सील एवं हस्ताक्षर विकल्प:</strong> यहाँ से आधिकारिक डिजीपे सील, VLE हस्ताक्षर एवं ग्राहक हस्ताक्षर चालू/बंद करें।
+          </div>
+
+          <!-- Seal and Signatures Dedicated Controls -->
+          <div class="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200 divide-y divide-slate-200">
+            <label class="flex items-center justify-between py-2 cursor-pointer font-semibold text-blue-900">
+              <span class="text-xs flex items-center gap-1.5">
+                <i data-lucide="stamp" class="w-4 h-4 text-blue-700"></i>
+                दुकान की मुहर / सील (Official CSC Seal)
+              </span>
+              <input type="checkbox" id="show-seal" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+
+            <label class="flex items-center justify-between py-2 cursor-pointer font-semibold text-blue-900">
+              <span class="text-xs flex items-center gap-1.5">
+                <i data-lucide="pen-tool" class="w-4 h-4 text-blue-700"></i>
+                VLE / ऑपरेटर हस्ताक्षर (VLE Sign)
+              </span>
+              <input type="checkbox" id="show-vle-signature" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+
+            <label class="flex items-center justify-between py-2 cursor-pointer font-semibold text-blue-900">
+              <span class="text-xs flex items-center gap-1.5">
+                <i data-lucide="signature" class="w-4 h-4 text-blue-700"></i>
+                ग्राहक हस्ताक्षर बॉक्स (Customer Signature)
+              </span>
+              <input type="checkbox" id="show-cust-signature" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+          </div>
+
+          <!-- Other Field Visibility Switches -->
+          <div class="space-y-1.5 bg-slate-50 p-3 rounded-lg border border-slate-200 divide-y divide-slate-100">
+            <span class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">अन्य फ़ील्ड्स नियंत्रण:</span>
+            <label class="flex items-center justify-between py-1.5 cursor-pointer">
+              <span class="text-xs font-medium text-slate-700">लोगो (Logo)</span>
+              <input type="checkbox" id="show-logo" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+            <label class="flex items-center justify-between py-1.5 cursor-pointer">
+              <span class="text-xs font-medium text-slate-700">दुकान का नाम (Shop Name)</span>
+              <input type="checkbox" id="show-shop-name" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+            <label class="flex items-center justify-between py-1.5 cursor-pointer">
+              <span class="text-xs font-medium text-slate-700">दुकान का पता व मोबाइल</span>
+              <input type="checkbox" id="show-shop-address" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+            <label class="flex items-center justify-between py-1.5 cursor-pointer">
+              <span class="text-xs font-medium text-slate-700">VLE ID एवं नाम</span>
+              <input type="checkbox" id="show-vle-id" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+            <label class="flex items-center justify-between py-1.5 cursor-pointer">
+              <span class="text-xs font-medium text-slate-700">विड्रॉल राशि हाइलाइट बॉक्स</span>
+              <input type="checkbox" id="show-amount-box" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+            <label class="flex items-center justify-between py-1.5 cursor-pointer">
+              <span class="text-xs font-medium text-slate-700">ग्राहक का नाम (Customer Name)</span>
+              <input type="checkbox" id="show-customer-name" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+            <label class="flex items-center justify-between py-1.5 cursor-pointer">
+              <span class="text-xs font-medium text-slate-700">मास्क्ड आधार संख्या</span>
+              <input type="checkbox" id="show-aadhaar" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+            <label class="flex items-center justify-between py-1.5 cursor-pointer">
+              <span class="text-xs font-medium text-slate-700">खाता शेष राशि (Ledger Balance)</span>
+              <input type="checkbox" id="show-balance" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+            <label class="flex items-center justify-between py-1.5 cursor-pointer">
+              <span class="text-xs font-medium text-slate-700">बारकोड सिमुलेशन (Barcode)</span>
+              <input type="checkbox" id="show-barcode" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+            <label class="flex items-center justify-between py-1.5 cursor-pointer">
+              <span class="text-xs font-medium text-slate-700">डिजीपे वॉटरमार्क (Watermark)</span>
+              <input type="checkbox" id="show-watermark" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+            <label class="flex items-center justify-between py-1.5 cursor-pointer">
+              <span class="text-xs font-medium text-slate-700">फुटर नोट व धन्यवाद संदेश</span>
+              <input type="checkbox" id="show-footer" checked class="w-4 h-4 text-blue-600 rounded" onchange="updateAppState()">
+            </label>
+          </div>
+        </div>
+
+        <div id="tab-content-layout" class="tab-pane hidden space-y-4">
+          <div class="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900 leading-tight">
+            <strong>रसीद हाइड / प्रिंट कंट्रोल:</strong> A4 शीट पर 6 में से जिस भी रसीद को प्रिंट नहीं करना चाहते, उसके बॉक्स को अनचेक कर दें। वह स्लॉट खाली रहेगा और बाकी रसीदों का स्थान नहीं बदलेगा!
+          </div>
+
+          <!-- 6 Slots Selector Grid -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">A4 शीट के 6 स्लॉट टॉगल करें:</span>
+              <div class="flex gap-2">
+                <button type="button" onclick="setAllSlots(true)" class="text-[11px] text-blue-600 font-semibold hover:underline">सभी चुनें</button>
+                <span class="text-slate-300">|</span>
+                <button type="button" onclick="setAllSlots(false)" class="text-[11px] text-rose-500 font-semibold hover:underline">सभी हटाएं</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+              <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 text-xs font-semibold cursor-pointer hover:bg-blue-50">
+                <input type="checkbox" id="slot-toggle-0" checked class="w-4 h-4 text-blue-600 rounded" onchange="toggleReceiptSlot(0)">
+                <span>रसीद #1 (ऊपर बाएँ)</span>
+              </label>
+
+              <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 text-xs font-semibold cursor-pointer hover:bg-blue-50">
+                <input type="checkbox" id="slot-toggle-1" checked class="w-4 h-4 text-blue-600 rounded" onchange="toggleReceiptSlot(1)">
+                <span>रसीद #2 (ऊपर दाएँ)</span>
+              </label>
+
+              <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 text-xs font-semibold cursor-pointer hover:bg-blue-50">
+                <input type="checkbox" id="slot-toggle-2" checked class="w-4 h-4 text-blue-600 rounded" onchange="toggleReceiptSlot(2)">
+                <span>रसीद #3 (मध्य बाएँ)</span>
+              </label>
+
+              <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 text-xs font-semibold cursor-pointer hover:bg-blue-50">
+                <input type="checkbox" id="slot-toggle-3" checked class="w-4 h-4 text-blue-600 rounded" onchange="toggleReceiptSlot(3)">
+                <span>रसीद #4 (मध्य दाएँ)</span>
+              </label>
+
+              <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 text-xs font-semibold cursor-pointer hover:bg-blue-50">
+                <input type="checkbox" id="slot-toggle-4" checked class="w-4 h-4 text-blue-600 rounded" onchange="toggleReceiptSlot(4)">
+                <span>रसीद #5 (नीचे बाएँ)</span>
+              </label>
+
+              <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 text-xs font-semibold cursor-pointer hover:bg-blue-50">
+                <input type="checkbox" id="slot-toggle-5" checked class="w-4 h-4 text-blue-600 rounded" onchange="toggleReceiptSlot(5)">
+                <span>रसीद #6 (नीचे दाएँ)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Color Theme Picker -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">थीम एक्सेंट कलर (Receipt Theme)</label>
+            <div class="flex items-center gap-3">
+              <button type="button" onclick="setThemeColor('#0B4F8A')" class="w-8 h-8 rounded-full bg-[#0B4F8A] border-2 border-white ring-2 ring-slate-300 hover:scale-110 transition-transform" title="DigiPay Navy"></button>
+              <button type="button" onclick="setThemeColor('#0284c7')" class="w-8 h-8 rounded-full bg-[#0284c7] border-2 border-white ring-2 ring-slate-300 hover:scale-110 transition-transform" title="Sky Blue"></button>
+              <button type="button" onclick="setThemeColor('#15803d')" class="w-8 h-8 rounded-full bg-[#15803d] border-2 border-white ring-2 ring-slate-300 hover:scale-110 transition-transform" title="Emerald Green"></button>
+              <button type="button" onclick="setThemeColor('#c2410c')" class="w-8 h-8 rounded-full bg-[#c2410c] border-2 border-white ring-2 ring-slate-300 hover:scale-110 transition-transform" title="CSC Orange"></button>
+              <button type="button" onclick="setThemeColor('#1e293b')" class="w-8 h-8 rounded-full bg-[#1e293b] border-2 border-white ring-2 ring-slate-300 hover:scale-110 transition-transform" title="Classic Slate"></button>
+              <input type="color" id="custom-color-picker" value="#0B4F8A" class="w-8 h-8 p-0 rounded-lg cursor-pointer border-0" onchange="setThemeColor(this.value)">
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-content-history" class="tab-pane hidden space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-slate-800">पिछले 30 दिनों का रिकॉर्ड:</span>
+              <p class="text-[11px] text-slate-500">30 दिन से पुराना डेटा स्वतः हटा दिया जाता है</p>
+            </div>
+            <button type="button" onclick="clearAllHistory()" class="text-xs text-rose-600 hover:underline font-semibold">
+              सब साफ करें
+            </button>
+          </div>
+
+          <div id="history-items-container" class="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+            <!-- Dynamic history cards inserted here -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Action Footer within Sidebar -->
+      <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <span class="flex items-center gap-1">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i> पिन सुरक्षित डेटा
+        </span>
+        <button type="button" onclick="triggerPrint('a4')" class="text-blue-700 font-bold hover:underline flex items-center gap-1">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> A4 शीट प्रिंट करें
+        </button>
+      </div>
+    </section>
+
+    <section class="flex-1 flex flex-col items-center">
+      
+      <!-- Preview Controls Header -->
+      <div class="no-print w-full max-w-[850px] mb-3 flex flex-wrap items-center justify-between gap-2 bg-white px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+            <i data-lucide="file-check-2" class="w-4 h-4 text-blue-600"></i>
+            A4 शीट लाइव पूर्वावलोकन (210mm x 297mm)
+          </span>
+          <span id="badge-page-count" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+            6 Receipts Per Sheet (Fixed)
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs">
+          <span class="text-slate-500">ज़ूम:</span>
+          <button onclick="adjustZoom(-0.05)" class="p-1 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">
+            <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+          </button>
+          <span id="zoom-level-text" class="font-mono text-slate-700 font-semibold w-10 text-center">88%</span>
+          <button onclick="adjustZoom(0.05)" class="p-1 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">
+            <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="resetZoom()" class="text-xs text-blue-600 hover:underline ml-1">रीसेट</button>
+        </div>
+      </div>
+
+      <!-- Printable A4 Sheet Simulator Wrapper -->
+      <div id="print-area-wrapper" class="w-full flex justify-center overflow-x-auto pb-12">
+        <div id="a4-sheet-canvas" class="bg-white border border-slate-300 shadow-xl transition-transform origin-top duration-150 p-2 sm:p-3" style="width: 202mm; min-height: 289mm; transform: scale(0.88);">
+          
+          <!-- MULTI-RECEIPT GRID CONTAINER: Fixed 2 columns x 3 rows -->
+          <div id="receipt-render-grid" class="w-full h-full grid grid-cols-2 gap-2 relative">
+            <!-- Dynamic receipts injected here by JavaScript -->
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <div id="toast-box" class="toast-notification fixed bottom-5 right-5 bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 z-50 pointer-events-none">
+    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toast-message">डेटा सफलतापूर्वक अपडेट हुआ</span>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'csc_digipay_master_v3';
+
+    // Application state
+    const state = {
+      // Profile
+      isProfileLocked: false,
+      shopName: "डिजिटल सेवा केंद्र (CSC Center)",
+      cscId: "123456789012",
+      vleName: "राजेश शर्मा",
+      vleMobile: "+91 98765 43210",
+      tagline: "AePS & Micro-ATM Services",
+      shopAddress: "मेन मार्केट, ग्राम पंचायत भवन के पास, नई दिल्ली - 110001",
+      logoUrl: "https://placehold.co/100x100/0b4f8a/ffffff?text=CSC",
+      logoSize: 42,
+      securityPin: "1234",
+
+      // Transaction
+      serviceType: "AePS नकद निकासी (Cash Withdrawal)",
+      status: "SUCCESS",
+      amount: "2500",
+      ledgerBalance: "5420.75",
+      dateTime: "19-09-2026 12:04:09 PM",
+      rrn: "425109876543",
+      authCode: "982310",
+      bankName: "State Bank of India (SBI)",
+      aadhaarNo: "XXXX-XXXX-4589",
+      customerName: "सुरेश कुमार",
+      terminalId: "MNT9812401",
+      footerNote: "यह कंप्यूटर जनरेटेड रसीद है। किसी हस्ताक्षर की आवश्यकता नहीं है।",
+
+      // Seals and Signatures
+      showSeal: true,
+      showVleSignature: true,
+      showCustSignature: true,
+
+      // Visibility toggles
+      showLogo: true,
+      showShopName: true,
+      showShopAddress: true,
+      showVleId: true,
+      showAmountBox: true,
+      showCustomerName: true,
+      showAadhaar: true,
+      showBalance: true,
+      showBarcode: true,
+      showWatermark: true,
+      showFooter: true,
+
+      // Slot Print/Hide checkboxes (6 Receipts)
+      activeSlots: [true, true, true, true, true, true],
+
+      // Styling & layout
+      themeColor: "#0B4F8A",
+      currentZoom: 0.88,
+
+      // History
+      history: []
+    };
+
+    function checkAuthentication() {
+      const isAuth = sessionStorage.getItem(STORAGE_KEY + '_auth');
+      const modal = document.getElementById('auth-modal');
+      if (isAuth === 'true') {
+        modal.classList.add('hidden');
+      } else {
+        modal.classList.remove('hidden');
+        document.getElementById('input-login-pin').focus();
+      }
+    }
+
+    function handleLoginSubmit() {
+      const pin = document.getElementById('input-login-pin').value;
+      const validPin = state.securityPin || '1234';
+      if (pin === validPin) {
+        sessionStorage.setItem(STORAGE_KEY + '_auth', 'true');
+        document.getElementById('auth-modal').classList.add('hidden');
+        showToast("लॉगिन सफल! स्वागत है।");
+      } else {
+        showToast("गलत पिन! डिफ़ॉल्ट पिन 1234 है।");
+        document.getElementById('input-login-pin').value = '';
+      }
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem(STORAGE_KEY + '_auth');
+      checkAuthentication();
+      showToast("सिस्टम लॉक कर दिया गया है।");
+    }
+
+    function updateSecurityPin() {
+      const pin = document.getElementById('input-new-pin').value;
+      if (pin.length === 4 && !isNaN(pin)) {
+        state.securityPin = pin;
+        saveToLocalStorage();
+        document.getElementById('input-new-pin').value = '';
+        showToast("सुरक्षा पिन सफलतापूर्वक बदला गया!");
+      } else {
+        showToast("कृपया केवल 4 अंकों का मान्य नंबर पिन डालें!");
+      }
+    }
+
+    function toggleProfileLock() {
+      state.isProfileLocked = !state.isProfileLocked;
+      applyProfileLockUI();
+      saveToLocalStorage();
+      showToast(state.isProfileLocked ? "दुकान प्रोफाइल सुरक्षित रूप से लॉक कर दी गई!" : "दुकान प्रोफाइल अनलॉक हो गई।");
+    }
+
+    function applyProfileLockUI() {
+      const banner = document.getElementById('profile-lock-banner');
+      const lockIcon = document.getElementById('lock-status-icon');
+      const title = document.getElementById('lock-status-title');
+      const btn = document.getElementById('btn-toggle-profile-lock');
+      const inputs = document.querySelectorAll('.profile-input');
+
+      inputs.forEach(input => {
+        input.disabled = state.isProfileLocked;
+      });
+
+      if (state.isProfileLocked) {
+        banner.className = 'p-3 rounded-lg border flex items-center justify-between transition-colors bg-rose-50 border-rose-200';
+        lockIcon.setAttribute('data-lucide', 'lock');
+        lockIcon.className = 'w-4 h-4 text-rose-600';
+        title.innerHTML = 'दुकान प्रोफाइल लॉक्ड है (Protected)';
+        title.className = 'text-xs font-bold text-rose-900';
+        btn.innerHTML = `<i data-lucide="unlock" class="w-3.5 h-3.5"></i> प्रोफाइल अनलॉक करें`;
+        btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg border shadow-sm transition-all bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1';
+      } else {
+        banner.className = 'p-3 rounded-lg border flex items-center justify-between transition-colors bg-emerald-50 border-emerald-200';
+        lockIcon.setAttribute('data-lucide', 'unlock');
+        lockIcon.className = 'w-4 h-4 text-blue-600';
+        title.innerHTML = 'दुकान प्रोफाइल खुली है (Editable)';
+        title.className = 'text-xs font-bold text-slate-800';
+        btn.innerHTML = `<i data-lucide="lock" class="w-3.5 h-3.5"></i> प्रोफाइल लॉक करें`;
+        btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg border shadow-sm transition-all bg-white border-slate-300 text-slate-700 hover:bg-slate-100 flex items-center gap-1';
+      }
+      lucide.createIcons();
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('bg-white', 'text-blue-700', 'border-t-2', 'border-blue-600', 'shadow-sm');
+        b.classList.add('text-slate-600');
+      });
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-white', 'text-blue-700', 'border-t-2', 'border-blue-600', 'shadow-sm');
+        activeBtn.classList.remove('text-slate-600');
+      }
+
+      const activePane = document.getElementById(`tab-content-${tabId}`);
+      if (activePane) activePane.classList.remove('hidden');
+
+      if (tabId === 'history') {
+        renderHistoryList();
+      }
+    }
+
+    function toggleReceiptSlot(index) {
+      const checkbox = document.getElementById(`slot-toggle-${index}`);
+      state.activeSlots[index] = checkbox.checked;
+      renderReceiptGrid();
+      showToast(`रसीद #${index + 1} को ${checkbox.checked ? 'प्रिंट सूची में जोड़ा' : 'छुपाया गया'}`);
+    }
+
+    function setAllSlots(status) {
+      for (let i = 0; i < 6; i++) {
+        state.activeSlots[i] = status;
+        const cb = document.getElementById(`slot-toggle-${i}`);
+        if (cb) cb.checked = status;
+      }
+      renderReceiptGrid();
+      showToast(status ? "सभी 6 रसीदें सक्रिय की गईं" : "सभी रसीदें छुपाई गईं");
+    }
+
+    function generateSingleReceiptHTML(index) {
+      const isVisible = state.activeSlots[index];
+      const slotHiddenClass = isVisible ? '' : 'slot-hidden opacity-10 bg-slate-50 border-dashed border-slate-200';
+
+      const formattedAmount = Number(state.amount || 0).toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      const formattedBalance = Number(state.ledgerBalance || 0).toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+
+      const statusBadgeHTML = state.status === 'SUCCESS'
+        ? `<span class="inline-flex items-center gap-0.5 font-bold text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-300">✔ SUCCESSFUL</span>`
+        : state.status === 'FAILED'
+          ? `<span class="inline-flex items-center gap-0.5 font-bold text-[9px] px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-300">✖ FAILED</span>`
+          : `<span class="inline-flex items-center gap-0.5 font-bold text-[9px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-300">⏳ PENDING</span>`;
+
+      return `
+        <div class="receipt-item-card relative bg-white border border-slate-300 rounded-lg p-2.5 flex flex-col justify-between overflow-hidden text-[10.5px] leading-tight select-text ${slotHiddenClass}">
+          
+          <!-- Digipay Watermark -->
+          ${state.showWatermark ? `
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.035] select-none rotate-[-22deg]">
+              <span class="text-4xl font-black tracking-widest text-black">CSC DIGIPAY</span>
+            </div>
+          ` : ''}
+
+          <div>
+            <!-- Header Section -->
+            <div class="flex items-center justify-between gap-1.5 border-b pb-1.5" style="border-color: ${state.themeColor}30;">
+              <div class="flex items-center gap-1.5">
+                ${state.showLogo && state.logoUrl ? `
+                  <img src="${state.logoUrl}" alt="Logo" style="height: ${state.logoSize}px; width: ${state.logoSize}px; object-fit: contain;" class="rounded shrink-0">
+                ` : ''}
+                <div>
+                  ${state.showShopName ? `
+                    <h2 class="font-extrabold text-[12.5px] leading-none" style="color: ${state.themeColor};">
+                      ${escapeHtml(state.shopName)}
+                    </h2>
+                  ` : ''}
+                  <div class="text-[9px] text-slate-500 font-medium mt-0.5">
+                    ${escapeHtml(state.tagline)}
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-right shrink-0">
+                <span class="text-[8px] uppercase tracking-wider font-bold px-1 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                  #0${index + 1}
+                </span>
+              </div>
+            </div>
+
+            <!-- Shop Address & Mobile -->
+            ${state.showShopAddress ? `
+              <div class="text-[8.5px] text-slate-600 mt-1 pb-1 border-b border-slate-100 flex justify-between gap-1">
+                <span class="truncate">${escapeHtml(state.shopAddress)}</span>
+                ${state.vleMobile ? `<span class="font-semibold text-slate-700 shrink-0">Mob: ${escapeHtml(state.vleMobile)}</span>` : ''}
+              </div>
+            ` : ''}
+
+            <!-- Service Title & Status -->
+            <div class="mt-1 flex items-center justify-between">
+              <span class="font-bold uppercase tracking-wide text-slate-800 text-[10px]">
+                ${escapeHtml(state.serviceType)}
+              </span>
+              ${statusBadgeHTML}
+            </div>
+
+            <!-- Amount Highlight Box -->
+            ${state.showAmountBox ? `
+              <div class="my-1 p-1 rounded text-center border" style="background-color: ${state.themeColor}08; border-color: ${state.themeColor}25;">
+                <div class="text-[8.5px] font-bold uppercase tracking-wider text-slate-600">निकासी राशि (Withdrawal Amount)</div>
+                <div class="font-black text-base tracking-tight" style="color: ${state.themeColor};">
+                  ₹ ${formattedAmount}
+                </div>
+              </div>
+            ` : '<div class="my-0.5"></div>'}
+
+            <!-- Key-Value Transaction Grid -->
+            <table class="w-full text-left border-collapse my-0.5 text-[9.5px]">
+              <tbody>
+                ${state.showVleId ? `
+                  <tr class="border-b border-slate-100">
+                    <td class="py-0.5 text-slate-500">VLE ID:</td>
+                    <td class="py-0.5 font-semibold text-right text-slate-800 font-mono">${escapeHtml(state.cscId)} ${state.vleName ? `(${escapeHtml(state.vleName)})` : ''}</td>
+                  </tr>
+                ` : ''}
+
+                <tr class="border-b border-slate-100">
+                  <td class="py-0.5 text-slate-500">तारीख व समय:</td>
+                  <td class="py-0.5 font-mono text-right text-slate-800">${escapeHtml(state.dateTime)}</td>
+                </tr>
+
+                <tr class="border-b border-slate-100">
+                  <td class="py-0.5 text-slate-500">RRN (Ref ID):</td>
+                  <td class="py-0.5 font-mono font-bold text-right text-slate-800">${escapeHtml(state.rrn)}</td>
+                </tr>
+
+                <tr class="border-b border-slate-100">
+                  <td class="py-0.5 text-slate-500">ग्राहक बैंक:</td>
+                  <td class="py-0.5 font-semibold text-right text-slate-800">${escapeHtml(state.bankName)}</td>
+                </tr>
+
+                ${state.showAadhaar ? `
+                  <tr class="border-b border-slate-100">
+                    <td class="py-0.5 text-slate-500">आधार संख्या:</td>
+                    <td class="py-0.5 font-mono font-bold text-right text-slate-800">${escapeHtml(state.aadhaarNo)}</td>
+                  </tr>
+                ` : ''}
+
+                ${state.showCustomerName && state.customerName ? `
+                  <tr class="border-b border-slate-100">
+                    <td class="py-0.5 text-slate-500">ग्राहक का नाम:</td>
+                    <td class="py-0.5 font-medium text-right text-slate-800">${escapeHtml(state.customerName)}</td>
+                  </tr>
+                ` : ''}
+
+                ${state.showBalance ? `
+                  <tr class="border-t border-slate-200 font-bold bg-slate-50">
+                    <td class="py-0.5 px-0.5 text-slate-700">खाता शेष:</td>
+                    <td class="py-0.5 px-0.5 text-right text-emerald-800">₹ ${formattedBalance}</td>
+                  </tr>
+                ` : ''}
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <!-- Seals & Signatures Block -->
+            <div class="mt-1 pt-1 border-t border-dashed border-slate-200 flex items-end justify-between gap-1 text-[8px]">
+              
+              <!-- Official Shop / CSC Seal -->
+              ${state.showSeal ? `
+                <div class="border border-blue-600 rounded px-1.5 py-0.5 text-center text-blue-700 leading-tight">
+                  <div class="font-black tracking-wider text-[7.5px]">DIGIPAY</div>
+                  <div class="text-[6.5px] uppercase font-bold">VERIFIED SEAL</div>
+                </div>
+              ` : '<div></div>'}
+
+              <!-- Customer Signature Line -->
+              ${state.showCustSignature ? `
+                <div class="text-center">
+                  <div class="w-14 border-b border-slate-400 mb-0.5"></div>
+                  <span class="text-slate-500 font-medium">ग्राहक हस्ताक्षर</span>
+                </div>
+              ` : ''}
+
+              <!-- VLE Signature Line -->
+              ${state.showVleSignature ? `
+                <div class="text-center">
+                  <div class="w-14 border-b border-slate-400 mb-0.5"></div>
+                  <span class="text-slate-600 font-bold">VLE हस्ताक्षर</span>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Footer Message -->
+            ${state.showFooter ? `
+              <div class="mt-1 text-center text-[7.5px] text-slate-400 leading-none">
+                यह कंप्यूटर जनरेटेड रसीद है • CSC e-Governance • धन्यवाद!
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Scissors indicator for cutting -->
+          <div class="cut-line-indicator absolute bottom-0 right-1 text-slate-300 pointer-events-none text-[8.5px]">
+            ✂ - - -
+          </div>
+
+        </div>
+      `;
+    }
+
+    function renderReceiptGrid() {
+      const container = document.getElementById('receipt-render-grid');
+      let html = '';
+      for (let i = 0; i < 6; i++) {
+        html += generateSingleReceiptHTML(i);
+      }
+      container.innerHTML = html;
+    }
+
+    function updateAppState() {
+      // Profile
+      state.shopName = document.getElementById('input-shop-name').value;
+      state.cscId = document.getElementById('input-csc-id').value;
+      state.vleName = document.getElementById('input-vle-name').value;
+      state.vleMobile = document.getElementById('input-vle-mobile').value;
+      state.tagline = document.getElementById('input-tagline').value;
+      state.shopAddress = document.getElementById('input-shop-address').value;
+      state.logoSize = parseInt(document.getElementById('input-logo-size').value, 10);
+
+      // Transaction
+      state.serviceType = document.getElementById('input-service-type').value;
+      state.status = document.getElementById('input-txn-status').value;
+      state.amount = document.getElementById('input-amount').value;
+      state.ledgerBalance = document.getElementById('input-ledger-balance').value;
+      state.dateTime = document.getElementById('input-datetime').value;
+      state.rrn = document.getElementById('input-rrn').value;
+      state.authCode = document.getElementById('input-auth-code').value;
+      state.bankName = document.getElementById('input-bank-name').value;
+      state.aadhaarNo = document.getElementById('input-aadhaar-no').value;
+      state.customerName = document.getElementById('input-customer-name').value;
+      state.terminalId = document.getElementById('input-terminal-id').value;
+      state.footerNote = document.getElementById('input-footer-note').value;
+
+      // Seals and Signs
+      state.showSeal = document.getElementById('show-seal').checked;
+      state.showVleSignature = document.getElementById('show-vle-signature').checked;
+      state.showCustSignature = document.getElementById('show-cust-signature').checked;
+
+      // Visibility
+      state.showLogo = document.getElementById('show-logo').checked;
+      state.showShopName = document.getElementById('show-shop-name').checked;
+      state.showShopAddress = document.getElementById('show-shop-address').checked;
+      state.showVleId = document.getElementById('show-vle-id').checked;
+      state.showAmountBox = document.getElementById('show-amount-box').checked;
+      state.showCustomerName = document.getElementById('show-customer-name').checked;
+      state.showAadhaar = document.getElementById('show-aadhaar').checked;
+      state.showBalance = document.getElementById('show-balance').checked;
+      state.showBarcode = document.getElementById('show-barcode').checked;
+      state.showWatermark = document.getElementById('show-watermark').checked;
+      state.showFooter = document.getElementById('show-footer').checked;
+
+      renderReceiptGrid();
+      saveToLocalStorage();
+    }
+
+    function saveCurrentReceiptToHistory() {
+      const record = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        serviceType: state.serviceType,
+        amount: state.amount,
+        bankName: state.bankName,
+        aadhaarNo: state.aadhaarNo,
+        customerName: state.customerName,
+        rrn: state.rrn,
+        balance: state.ledgerBalance
+      };
+
+      state.history.unshift(record);
+      pruneOldHistory();
+      saveToLocalStorage();
+      showToast("रसीद 1-माह की हिस्ट्री में सुरक्षित हो गई!");
+    }
+
+    function pruneOldHistory() {
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+      const cutoff = Date.now() - thirtyDaysMs;
+      state.history = state.history.filter(item => new Date(item.timestamp).getTime() > cutoff);
+    }
+
+    function renderHistoryList() {
+      pruneOldHistory();
+      const container = document.getElementById('history-items-container');
+      if (state.history.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-slate-400 text-xs">
+            <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-1 opacity-50"></i>
+            कोई सुरक्षित रिकॉर्ड नहीं है।
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = state.history.map(item => {
+        const d = new Date(item.timestamp);
+        const formattedDate = `${d.toLocaleDateString('en-GB')} ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+        return `
+          <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-blue-300 transition-all text-xs flex items-center justify-between">
+            <div>
+              <div class="font-bold text-slate-800">₹ ${Number(item.amount).toLocaleString('en-IN')} <span class="text-[10px] text-slate-500 font-normal">(${item.bankName})</span></div>
+              <div class="text-[10px] text-slate-500">RRN: ${item.rrn} • ${item.customerName || item.aadhaarNo}</div>
+              <div class="text-[9px] text-slate-400 mt-0.5">${formattedDate}</div>
+            </div>
+            <div class="flex gap-1">
+              <button type="button" onclick="loadReceiptFromHistory(${item.id})" title="डेटा लोड करें" class="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded font-semibold text-[11px]">
+                लोड
+              </button>
+              <button type="button" onclick="deleteHistoryItem(${item.id})" title="हटाएं" class="p-1 text-slate-400 hover:text-rose-600 rounded">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function loadReceiptFromHistory(id) {
+      const record = state.history.find(h => h.id === id);
+      if (record) {
+        document.getElementById('input-amount').value = record.amount;
+        document.getElementById('input-bank-name').value = record.bankName;
+        document.getElementById('input-aadhaar-no').value = record.aadhaarNo;
+        document.getElementById('input-customer-name').value = record.customerName || '';
+        document.getElementById('input-rrn').value = record.rrn;
+        document.getElementById('input-ledger-balance').value = record.balance;
+        updateAppState();
+        switchTab('transaction');
+        showToast("हिस्ट्री से रसीद डेटा लोड किया गया!");
+      }
+    }
+
+    function deleteHistoryItem(id) {
+      state.history = state.history.filter(h => h.id !== id);
+      saveToLocalStorage();
+      renderHistoryList();
+      showToast("रिकॉर्ड हटा दिया गया।");
+    }
+
+    function clearAllHistory() {
+      state.history = [];
+      saveToLocalStorage();
+      renderHistoryList();
+      showToast("सभी हिस्ट्री रिकॉर्ड्स हटा दिए गए।");
+    }
+
+    // Local Storage helpers
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          isProfileLocked: state.isProfileLocked,
+          shopName: state.shopName,
+          cscId: state.cscId,
+          vleName: state.vleName,
+          vleMobile: state.vleMobile,
+          tagline: state.tagline,
+          shopAddress: state.shopAddress,
+          logoUrl: state.logoUrl,
+          logoSize: state.logoSize,
+          securityPin: state.securityPin,
+          themeColor: state.themeColor,
+          history: state.history
+        }));
+      } catch (e) {
+        // quota exceeded fallback
+      }
+    }
+
+    function loadFromLocalStorage() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          const saved = JSON.parse(raw);
+          if (saved.shopName) document.getElementById('input-shop-name').value = saved.shopName;
+          if (saved.cscId) document.getElementById('input-csc-id').value = saved.cscId;
+          if (saved.vleName) document.getElementById('input-vle-name').value = saved.vleName;
+          if (saved.vleMobile) document.getElementById('input-vle-mobile').value = saved.vleMobile;
+          if (saved.tagline) document.getElementById('input-tagline').value = saved.tagline;
+          if (saved.shopAddress) document.getElementById('input-shop-address').value = saved.shopAddress;
+          if (saved.logoSize) document.getElementById('input-logo-size').value = saved.logoSize;
+          if (saved.logoUrl) {
+            state.logoUrl = saved.logoUrl;
+            document.getElementById('custom-logo-img').src = saved.logoUrl;
+          }
+          if (saved.securityPin) state.securityPin = saved.securityPin;
+          if (saved.themeColor) setThemeColor(saved.themeColor);
+          if (saved.history) state.history = saved.history;
+          if (saved.isProfileLocked !== undefined) state.isProfileLocked = saved.isProfileLocked;
+        } catch (e) {}
+      }
+    }
+
+    // Logo handlers
+    document.getElementById('logo-file-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        if (file.size > 2 * 1024 * 1024) {
+          showToast("कृपया 2MB से छोटी इमेज चुनें");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          state.logoUrl = evt.target.result;
+          document.getElementById('custom-logo-img').src = evt.target.result;
+          renderReceiptGrid();
+          saveToLocalStorage();
+          showToast("लोगो सफलतापूर्वक अपलोड हुआ!");
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function setDefaultCSCLogo() {
+      state.logoUrl = "https://placehold.co/100x100/0b4f8a/ffffff?text=CSC";
+      document.getElementById('custom-logo-img').src = state.logoUrl;
+      renderReceiptGrid();
+      saveToLocalStorage();
+      showToast("डिफ़ॉल्ट सीएससी लोगो लागू किया गया");
+    }
+
+    function removeLogo() {
+      state.logoUrl = "";
+      document.getElementById('custom-logo-img').src = "https://placehold.co/100x100/f1f5f9/94a3b8?text=NO+LOGO";
+      renderReceiptGrid();
+      saveToLocalStorage();
+      showToast("लोगो हटा दिया गया");
+    }
+
+    function setThemeColor(hex) {
+      state.themeColor = hex;
+      document.getElementById('custom-color-picker').value = hex;
+      renderReceiptGrid();
+      saveToLocalStorage();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function setCurrentDateTime() {
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+      let hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const formattedHours = String(hours).padStart(2, '0');
+
+      document.getElementById('input-datetime').value = `${day}-${month}-${year} ${formattedHours}:${minutes}:${seconds} ${ampm}`;
+      updateAppState();
+      showToast("वर्तमान समय सेट किया गया");
+    }
+
+    function generateRandomRRN() {
+      const rrn = '4' + Math.floor(10000000000 + Math.random() * 90000000000).toString();
+      document.getElementById('input-rrn').value = rrn;
+      updateAppState();
+      showToast("नया RRN जनरेट किया गया");
+    }
+
+    function adjustZoom(delta) {
+      let newZoom = Math.min(Math.max(state.currentZoom + delta, 0.4), 1.3);
+      state.currentZoom = parseFloat(newZoom.toFixed(2));
+      const canvas = document.getElementById('a4-sheet-canvas');
+      canvas.style.transform = `scale(${state.currentZoom})`;
+      document.getElementById('zoom-level-text').innerText = `${Math.round(state.currentZoom * 100)}%`;
+    }
+
+    function resetZoom() {
+      state.currentZoom = 0.88;
+      document.getElementById('a4-sheet-canvas').style.transform = 'scale(0.88)';
+      document.getElementById('zoom-level-text').innerText = '88%';
+    }
+
+    function triggerPrint(mode) {
+      if (mode === 'thermal') {
+        document.body.classList.add('thermal-mode');
+        setTimeout(() => {
+          window.print();
+          document.body.classList.remove('thermal-mode');
+        }, 150);
+      } else {
+        document.body.classList.remove('thermal-mode');
+        setTimeout(() => {
+          window.print();
+        }, 100);
+      }
+    }
+
+    let toastTimeout;
+    function showToast(msg) {
+      const toast = document.getElementById('toast-box');
+      const text = document.getElementById('toast-message');
+      text.innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 2400);
+    }
+
+    // Application Bootstrap
+    window.onload = function() {
+      loadFromLocalStorage();
+      applyProfileLockUI();
+      checkAuthentication();
+      updateAppState();
+      lucide.createIcons();
+    };
+  </script>
+</body>
+</html>
+```
